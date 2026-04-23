@@ -1,0 +1,8 @@
+rules:
+  - "Flag missing input validation in event handlers."
+  - "Flag synchronous DB calls inside event consumers (should be async)."
+  - "Flag hardcoded secrets, API keys, tokens, or credentials."
+  - "Flag SQL injection via string concatenation."
+  - "Flag missing error handling around external service calls (Kafka, Redis, etc)."
+max_findings_per_review: 5
+severity_blocking: critical
