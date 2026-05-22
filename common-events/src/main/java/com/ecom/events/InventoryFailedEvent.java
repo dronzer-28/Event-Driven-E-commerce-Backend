@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class InventoryFailedEvent {
+    private String eventId;
     private Long orderId;
     private String productId;
     private String reason;

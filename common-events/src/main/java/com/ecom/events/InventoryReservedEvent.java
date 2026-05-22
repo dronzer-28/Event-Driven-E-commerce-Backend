@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class InventoryReservedEvent {
+    private String eventId;
     private Long orderId;
     private String productId;
     private Integer quantity;

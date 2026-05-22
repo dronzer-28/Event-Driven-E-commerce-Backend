@@ -7,11 +7,15 @@ import com.ecom.order.dto.CreateOrderRequest;
 import com.ecom.order.kafka.OrderEventProducer;
 import com.ecom.order.model.Order;
 import com.ecom.order.model.OrderStatus;
+import com.ecom.order.model.ProcessedEvent;
 import com.ecom.order.repository.OrderRepository;
+import com.ecom.order.repository.ProcessedEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -20,6 +24,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderEventProducer orderEventProducer;
+    private final ProcessedEventRepository processedEventRepository;
 
     @Transactional
     public Order placeOrder(CreateOrderRequest req) {
@@ -34,6 +39,7 @@ public class OrderService {
         log.info("Saved order id={} status={}", saved.getId(), saved.getStatus());
 
         orderEventProducer.publishOrderCreated(new OrderCreatedEvent(
+                UUID.randomUUID().toString(),
                 saved.getId(),
                 saved.getProductId(),
                 saved.getQuantity(),
@@ -50,7 +56,12 @@ public class OrderService {
     }
 
     @Transactional
-    public void confirm(Long orderId) {
+    public void confirm(String eventId, Long orderId) {
+        if (eventId != null && processedEventRepository.existsById(eventId)) {
+            log.warn("Duplicate event ignored: eventId={}", eventId);
+            return;
+        }
+
         Order order = orderRepository.findById(orderId).orElse(null);
         if (order == null) {
             log.warn("confirm: order {} not found", orderId);
@@ -63,11 +74,21 @@ public class OrderService {
         order.setStatus(OrderStatus.CONFIRMED);
         orderRepository.save(order);
         log.info("Order {} CONFIRMED", orderId);
-        orderEventProducer.publishOrderConfirmed(new OrderConfirmedEvent(orderId));
+        orderEventProducer.publishOrderConfirmed(new OrderConfirmedEvent(
+                UUID.randomUUID().toString(), orderId));
+
+        if (eventId != null) {
+            processedEventRepository.save(new ProcessedEvent(eventId, "PaymentCompletedEvent"));
+        }
     }
 
     @Transactional
-    public void cancel(Long orderId, String reason) {
+    public void cancel(String eventId, Long orderId, String reason) {
+        if (eventId != null && processedEventRepository.existsById(eventId)) {
+            log.warn("Duplicate event ignored: eventId={}", eventId);
+            return;
+        }
+
         Order order = orderRepository.findById(orderId).orElse(null);
         if (order == null) {
             log.warn("cancel: order {} not found", orderId);
@@ -80,6 +101,11 @@ public class OrderService {
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
         log.info("Order {} CANCELLED: {}", orderId, reason);
-        orderEventProducer.publishOrderCancelled(new OrderCancelledEvent(orderId, reason));
+        orderEventProducer.publishOrderCancelled(new OrderCancelledEvent(
+                UUID.randomUUID().toString(), orderId, reason));
+
+        if (eventId != null) {
+            processedEventRepository.save(new ProcessedEvent(eventId, "OrderCancelEvent"));
+        }
     }
 }

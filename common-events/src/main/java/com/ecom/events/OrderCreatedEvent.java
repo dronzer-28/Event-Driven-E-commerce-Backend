@@ -11,6 +11,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderCreatedEvent {
+    private String eventId;
     private Long orderId;
     private String productId;
     private Integer quantity;
