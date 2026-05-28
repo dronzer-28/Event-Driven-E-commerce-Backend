@@ -24,7 +24,7 @@ public class OrderEventConsumer {
     )
     public void onInventoryFailed(InventoryFailedEvent event) {
         log.info("Received InventoryFailed: orderId={} reason={}", event.getOrderId(), event.getReason());
-        orderService.cancel(event.getOrderId(), "Inventory failed: " + event.getReason());
+        orderService.cancel(event.getEventId(), event.getOrderId(), "Inventory failed: " + event.getReason());
     }
 
     @KafkaListener(
@@ -34,7 +34,7 @@ public class OrderEventConsumer {
     )
     public void onPaymentCompleted(PaymentCompletedEvent event) {
         log.info("Received PaymentCompleted: orderId={}", event.getOrderId());
-        orderService.confirm(event.getOrderId());
+        orderService.confirm(event.getEventId(), event.getOrderId());
     }
 
     @KafkaListener(
@@ -44,6 +44,6 @@ public class OrderEventConsumer {
     )
     public void onPaymentFailed(PaymentFailedEvent event) {
         log.info("Received PaymentFailed: orderId={} reason={}", event.getOrderId(), event.getReason());
-        orderService.cancel(event.getOrderId(), "Payment failed: " + event.getReason());
+        orderService.cancel(event.getEventId(), event.getOrderId(), "Payment failed: " + event.getReason());
     }
 }

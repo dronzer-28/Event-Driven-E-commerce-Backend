@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderCancelledEvent {
+    private String eventId;
     private Long orderId;
     private String reason;
 }
