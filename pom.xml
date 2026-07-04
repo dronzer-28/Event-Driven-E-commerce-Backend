@@ -13,10 +13,12 @@
 
     <modules>
         <module>common-events</module>
+        <module>common-security</module>
         <module>order-service</module>
         <module>inventory-service</module>
         <module>payment-service</module>
         <module>notification-service</module>
+        <module>user-service</module>
     </modules>
 
     <properties>
@@ -40,6 +42,11 @@
             <dependency>
                 <groupId>com.ecom</groupId>
                 <artifactId>common-events</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ecom</groupId>
+                <artifactId>common-security</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

@@ -10,6 +10,14 @@ target/
 mvnw
 mvnw.cmd
 HELP.md
+X_DOCS/
 logs/
 *.log
 .claude/
+graphify-out
+plan.txt
+project_design.md
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+.env

@@ -25,7 +25,6 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Two listeners: PLAINTEXT for inside the docker network, PLAINTEXT_HOST for host access
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -89,6 +88,23 @@ services:
       timeout: 3s
       retries: 10
 
+  user-db:
+    image: postgres:16-alpine
+    container_name: user-db
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: useradmin
+      POSTGRES_PASSWORD: useradmin
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U useradmin -d userdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   order-service:
     build:
       context: .
@@ -106,6 +122,8 @@ services:
       DB_URL: jdbc:postgresql://order-db:5432/orderdb
       DB_USER: order
       DB_PASSWORD: order
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: http://localhost:3000,http://frontend:3000
 
   inventory-service:
     build:
@@ -124,6 +142,7 @@ services:
       DB_URL: jdbc:postgresql://inventory-db:5432/inventorydb
       DB_USER: inventory
       DB_PASSWORD: inventory
+      CORS_ORIGINS: http://localhost:3000,http://frontend:3000
 
   payment-service:
     build:
@@ -156,7 +175,42 @@ services:
     environment:
       KAFKA_BOOTSTRAP: kafka:9092
 
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    depends_on:
+      user-db:
+        condition: service_healthy
+    ports:
+      - "8085:8085"
+    environment:
+      DB_URL: jdbc:postgresql://user-db:5432/userdb
+      DB_USER: useradmin
+      DB_PASSWORD: useradmin
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: http://localhost:3000,http://frontend:3000
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    depends_on:
+      - order-service
+      - inventory-service
+      - user-service
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_WS_URL: ws://localhost:8081/ws
+      ORDER_SERVICE_URL: http://order-service:8081
+      INVENTORY_SERVICE_URL: http://inventory-service:8082
+      USER_SERVICE_URL: http://user-service:8085
+
 volumes:
   order-db-data:
   inventory-db-data:
   payment-db-data:
+  user-db-data:
